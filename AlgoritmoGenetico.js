@@ -18,6 +18,17 @@ class NEAT {
         this._dtMin   = 0.3;
         this._espAlvo = Math.max(4, Math.round(Math.sqrt(tamPop / 8)));
         this._maxEst  = 8;
+        this._txMutW  = 0.72;
+        this._pPerW   = 0.97;
+        this._sdMutW  = 0.3;
+        this._txAddCx = 0.03;
+        this._txAddNo = 0.01;
+        this._txTog   = 0.01;
+        this._compFit = true;
+        this._nElite  = 6;
+        this._pSurv   = 0.25;
+        this._pCross  = 0.75;
+        this._torK    = 7;
     }
 
     _inn(orig, dest) {
@@ -154,7 +165,7 @@ class NEAT {
     _ajFit() {
         for (const e of this.espec) {
             const sz = e.mems.length;
-            const dv = Math.sqrt(sz);
+            const dv = this._compFit ? Math.sqrt(sz) : 1;
             let mF = -Infinity;
             for (const g of e.mems) {
                 g.fitAdj = g.fit / dv;
@@ -195,9 +206,9 @@ class NEAT {
 
     _mutPesos(g) {
         for (const cx of g.cxs) {
-            if (Math.random() < 0.72) {
-                if (Math.random() < 0.97) cx.w += NEAT._gaussRnd(0, 0.3);
-                else                      cx.w  = Math.random() * 4 - 2;
+            if (Math.random() < this._txMutW) {
+                if (Math.random() < this._pPerW) cx.w += NEAT._gaussRnd(0, this._sdMutW);
+                else                             cx.w  = Math.random() * 4 - 2;
                 cx.w = Math.max(-8, Math.min(8, cx.w));
             }
         }
@@ -219,7 +230,7 @@ class NEAT {
     }
 
     _mutAddCx(g) {
-        if (Math.random() > 0.03) return;
+        if (Math.random() > this._txAddCx) return;
         const srcs  = g.nos.filter(n => n.tp !== 'said');
         const dests = g.nos.filter(n => n.tp !== 'ent' && n.tp !== 'bias');
         for (let t = 0; t < 20; t++) {
@@ -234,7 +245,7 @@ class NEAT {
     }
 
     _mutAddNo(g) {
-        if (Math.random() > 0.01) return;
+        if (Math.random() > this._txAddNo) return;
         const atv = g.cxs.filter(c => c.ativ);
         if (!atv.length) return;
 
@@ -257,12 +268,12 @@ class NEAT {
     }
 
     _mutToggle(g) {
-        if (Math.random() > 0.01 || !g.cxs.length) return;
+        if (Math.random() > this._txTog || !g.cxs.length) return;
         const cx = g.cxs[Math.floor(Math.random() * g.cxs.length)];
         cx.ativ  = !cx.ativ;
     }
 
-    _tor(mems, k = 7) {
+    _tor(mems, k = this._torK) {
         let best = null;
         for (let i = 0; i < k; i++) {
             const c = mems[Math.floor(Math.random() * mems.length)];
@@ -297,19 +308,19 @@ class NEAT {
             const srt = [...e.mems].sort((a, b) => b.fit - a.fit);
 
             if (e.mems.length >= 3 && nova.length < this.tamPop) {
-                const nEl = Math.min(6, srt.length);
+                const nEl = Math.min(this._nElite, srt.length);
                 for (let ei = 0; ei < nEl && nova.length < this.tamPop; ei++) {
                     nova.push(this._clon(srt[ei]));
                     quota = Math.max(0, quota - 1);
                 }
             }
 
-            const surv = srt.slice(0, Math.max(1, Math.floor(srt.length * 0.25)));
+            const surv = srt.slice(0, Math.max(1, Math.floor(srt.length * this._pSurv)));
 
             for (let i = 0; i < quota && nova.length < this.tamPop; i++) {
                 const p1 = this._tor(surv);
                 let filho;
-                if (surv.length > 1 && Math.random() < 0.75) {
+                if (surv.length > 1 && Math.random() < this._pCross) {
                     const p2   = this._tor(surv);
                     const [f1, f2] = p1.fit >= p2.fit ? [p1, p2] : [p2, p1];
                     filho = this._cross(f1, f2);
