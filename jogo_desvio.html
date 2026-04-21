@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Desvie dos Blocos - NEAT</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: radial-gradient(circle at 50% 30%, #1e2030 0%, #0a0b12 70%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            font-family: 'Segoe UI', 'Inter', system-ui, sans-serif;
+            user-select: none;
+            color: #dde;
+        }
+        #cont {
+            display: flex;
+            flex-direction: row;
+            align-items: flex-start;
+            gap: 14px;
+        }
+        #lCol { display: flex; flex-direction: column; }
+        #painel {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            background: linear-gradient(180deg, #1f2233 0%, #161827 100%);
+            border: 1px solid #2f3350;
+            border-bottom: none;
+            border-radius: 10px 10px 0 0;
+            padding: 10px 18px;
+            font-size: 13px;
+            color: #a8b0d8;
+            width: 900px;
+            box-shadow: 0 0 24px rgba(80,120,255,0.08);
+            letter-spacing: 0.3px;
+        }
+        #painel b {
+            color: #7cf;
+            font-weight: 600;
+            text-shadow: 0 0 8px rgba(120,200,255,0.4);
+        }
+        #painel .sp { color: #3a3f60; }
+        #btnVel, #btnSalvar {
+            background: #262940;
+            border: 1px solid #3a4068;
+            color: #bdc4e8;
+            padding: 5px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 12px;
+            font-weight: 500;
+            transition: all 0.15s ease;
+        }
+        #btnVel { margin-left: auto; }
+        #btnAuto.ativo { border-color: #4a4; color: #8f8; background: #1a3a1a; }
+        #btnVel:hover, #btnSalvar:hover {
+            background: #323756;
+            color: #fff;
+            border-color: #5c6bb8;
+            box-shadow: 0 0 10px rgba(120,150,255,0.3);
+        }
+        #btnSalvar { border-color: #8a6a30; color: #ddb878; }
+        #btnSalvar:hover {
+            background: #3a2f1a;
+            color: #ffe0a0;
+            border-color: #c9a060;
+            box-shadow: 0 0 10px rgba(220,180,100,0.3);
+        }
+        #cv {
+            display: block;
+            border: 1px solid #2f3350;
+            border-top: none;
+            border-bottom: none;
+            background: #0a0a0a;
+        }
+        #rodape {
+            background: linear-gradient(180deg, #161827 0%, #1f2233 100%);
+            border: 1px solid #2f3350;
+            border-top: none;
+            border-radius: 0 0 10px 10px;
+            padding: 7px 14px;
+            font-size: 11px;
+            color: #6a7099;
+            text-align: center;
+            width: 900px;
+            letter-spacing: 0.2px;
+        }
+        #rCol { display: flex; flex-direction: column; }
+        #labRede {
+            background: linear-gradient(180deg, #1f2233 0%, #161827 100%);
+            border: 1px solid #2f3350;
+            border-bottom: none;
+            border-radius: 10px 10px 0 0;
+            padding: 10px 14px;
+            font-size: 12px;
+            color: #a8b0d8;
+            text-align: center;
+            width: 320px;
+            letter-spacing: 0.3px;
+            font-weight: 500;
+        }
+        #cvRede {
+            display: block;
+            border: 1px solid #2f3350;
+            border-top: none;
+            border-bottom: none;
+            background: #0a0a0a;
+        }
+        #labRedeBot {
+            background: linear-gradient(180deg, #161827 0%, #1f2233 100%);
+            border: 1px solid #2f3350;
+            border-top: none;
+            border-radius: 0 0 10px 10px;
+            padding: 8px 10px;
+            font-size: 10px;
+            color: #6a7099;
+            text-align: center;
+            width: 320px;
+            line-height: 1.8;
+        }
+        #labRedeBot span {
+            display: inline-block;
+            margin: 0 4px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            box-shadow: 0 0 6px rgba(0,0,0,0.3);
+        }
+        .leg-e  { background: linear-gradient(180deg, #2cc04a, #1d8a33); color: #fff; }
+        .leg-b  { background: linear-gradient(180deg, #ff9a2c, #cc6a10); color: #fff; }
+        .leg-o  { background: linear-gradient(180deg, #3d7ae0, #1e4fb0); color: #fff; }
+        .leg-s  { background: linear-gradient(180deg, #e03838, #a81f1f); color: #fff; }
+    </style>
+</head>
+<body>
+    <div id="cont">
+        <div id="lCol">
+            <div id="painel">
+                <span>Ger <b id="sGer">0</b></span>
+                <span class="sp">|</span>
+                <span>Vivos <b id="sViv">1000</b>/1000</span>
+                <span class="sp">|</span>
+                <span>Fit <b id="sFit">0</b></span>
+                <span class="sp">|</span>
+                <span>Recorde <b id="sRec">0</b></span>
+                <span class="sp">|</span>
+                <span>Esp <b id="sEsp">-</b></span>
+                <button id="btnVel">Vel: 1x</button>
+                <button id="btnAuto">Auto: OFF</button>
+                <button id="btnSalvar">Salvar Melhor</button>
+            </div>
+            <canvas id="cv"></canvas>
+            <div id="rodape">
+                Verde claro = populacao &nbsp;|&nbsp; Verde brilhante = melhor individuo &nbsp;|&nbsp; Vermelho = inimigos &nbsp;|&nbsp; Raios = sensores do melhor
+            </div>
+        </div>
+        <div id="rCol">
+            <div id="labRede">Rede Neural — Melhor Individuo</div>
+            <canvas id="cvRede"></canvas>
+            <div id="labRedeBot">
+                <span class="leg-e">entrada</span>
+                <span class="leg-b">bias</span>
+                <span class="leg-o">oculto</span>
+                <span class="leg-s">saida</span>
+            </div>
+        </div>
+    </div>
+
+    <script src="RedeNeural.js"></script>
+    <script src="AlgoritmoGenetico.js"></script>
+    <script src="VisualizadorRede.js"></script>
+    <script>
+        if (!CanvasRenderingContext2D.prototype.roundRect) {
+            CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+                r = Math.min(r, w / 2, h / 2);
+                this.moveTo(x + r, y);
+                this.arcTo(x + w, y, x + w, y + h, r);
+                this.arcTo(x + w, y + h, x, y + h, r);
+                this.arcTo(x, y + h, x, y, r);
+                this.arcTo(x, y, x + w, y, r);
+                this.closePath();
+                return this;
+            };
+        }
+
+        const cv   = document.getElementById('cv');
+        const ctx  = cv.getContext('2d');
+        const cvR  = document.getElementById('cvRede');
+        const W  = 900, H  = 680, SZ = 22;
+        const WR = 320, HR = 680;
+        const LERP_A = 0.28;
+        cv.width  = W;  cv.height  = H;
+        cvR.width = WR; cvR.height = HR;
+
+        const viz = new VisualizadorRede(cvR);
+
+        const N_ENT   = 18;
+        const N_SAID  = 4;
+        const TAM_POP = 1000;
+        const VELS    = [1, 5, 20];
+        const MAX_SEN = 420;
+        const MAX_SPD = 6.0;
+
+        const MARGEM  = 120;
+        const ZONA = { x: MARGEM, y: MARGEM, w: W - MARGEM * 2, h: H - MARGEM * 2 };
+
+        const neat = new NEAT(N_ENT, N_SAID, TAM_POP);
+        neat.inicializar();
+        neat._maxEst  = 25;
+        neat._espAlvo = 6;
+
+        let ags = [], en = [];
+        let nvEn, spTmr, spItv, stepG;
+        let vivos = 0, bIdx = -1, bFitG = 0, recorde = 0;
+        let bEnts = new Array(N_ENT).fill(0);
+        let melhorGeral = null;
+        let velIdx = 0, vel = 1;
+        let autoVel = false;
+        let raf;
+
+        const maxDC = Math.sqrt((ZONA.w / 2) ** 2 + (ZONA.h / 2) ** 2);
+        const maxDS = 450;
+
+        function rnd(n) { return Math.random() * n; }
+
+        function col(a, b) {
+            return a.x < b.x + SZ && a.x + SZ > b.x &&
+                   a.y < b.y + SZ && a.y + SZ > b.y;
+        }
+
+        function getSens(ag) {
+            const cx = ag.x + SZ / 2, cy = ag.y + SZ / 2;
+            const xn = (cx - W / 2) / (W / 2);
+            const yn = (cy - H / 2) / (H / 2);
+            const mDs = new Array(8).fill(1.0);
+            const mVl = new Array(8).fill(0.0);
+
+            for (const e of en) {
+                const ex = e.x + SZ / 2 - cx;
+                const ey = e.y + SZ / 2 - cy;
+                const d  = Math.sqrt(ex * ex + ey * ey);
+                if (d < 1) {
+                    const r = new Array(N_ENT).fill(1);
+                    r[0] = xn; r[1] = yn;
+                    return r;
+                }
+                let ang = Math.atan2(ey, ex);
+                if (ang < 0) ang += 2 * Math.PI;
+                const sec = Math.floor((ang + Math.PI / 8) / (Math.PI / 4)) % 8;
+                const nd  = d / maxDS;
+                if (nd < mDs[sec]) {
+                    mDs[sec] = nd;
+                    const apSp = (-e.dx * ex - e.dy * ey) / (d * MAX_SPD);
+                    mVl[sec]  = Math.max(-1, Math.min(1, apSp));
+                }
+            }
+
+            return [xn, yn, ...mDs.map(d => 1 - d), ...mVl];
+        }
+
+        function rayAABB(ox, oy, dx, dy, bx, by) {
+            let tmin = 0, tmax = Infinity;
+            if (Math.abs(dx) > 1e-9) {
+                const t1 = (bx      - ox) / dx;
+                const t2 = (bx + SZ - ox) / dx;
+                tmin = Math.max(tmin, Math.min(t1, t2));
+                tmax = Math.min(tmax, Math.max(t1, t2));
+            } else if (ox < bx || ox > bx + SZ) return Infinity;
+            if (Math.abs(dy) > 1e-9) {
+                const t1 = (by      - oy) / dy;
+                const t2 = (by + SZ - oy) / dy;
+                tmin = Math.max(tmin, Math.min(t1, t2));
+                tmax = Math.min(tmax, Math.max(t1, t2));
+            } else if (oy < by || oy > by + SZ) return Infinity;
+            return tmax >= tmin ? tmin : Infinity;
+        }
+
+        function getMDs(ag) {
+            const cx   = ag.x + SZ / 2, cy = ag.y + SZ / 2;
+            const mDs  = new Array(8).fill(1.0);
+            const mEnm = new Array(8).fill(null);
+
+            for (const e of en) {
+                const ex = e.x + SZ / 2 - cx;
+                const ey = e.y + SZ / 2 - cy;
+                const d  = Math.sqrt(ex * ex + ey * ey);
+                if (d < 1) return new Array(8).fill(0.0);
+                let ang = Math.atan2(ey, ex);
+                if (ang < 0) ang += 2 * Math.PI;
+                const sec = Math.floor((ang + Math.PI / 8) / (Math.PI / 4)) % 8;
+                const nd  = d / maxDS;
+                if (nd < mDs[sec]) { mDs[sec] = nd; mEnm[sec] = e; }
+            }
+
+            return mDs.map((nd, sec) => {
+                if (!mEnm[sec]) return nd;
+                const a  = sec * Math.PI / 4;
+                const t  = rayAABB(cx, cy, Math.cos(a), Math.sin(a), mEnm[sec].x, mEnm[sec].y);
+                return t < Infinity ? t / maxDS : nd;
+            });
+        }
+
+        function criarEn() {
+            const brd = Math.floor(Math.random() * 4);
+            const spd = 1.5 + Math.random() * 1.8 + (nvEn - 1) * 0.15;
+            const ang = (Math.random() - 0.5) * 0.7;
+            let x, y, dx, dy;
+            if      (brd === 0) { x = rnd(W); y = -SZ;    dx =  Math.sin(ang) * spd; dy =  Math.cos(ang) * spd; }
+            else if (brd === 1) { x = W;      y = rnd(H);  dx = -Math.cos(ang) * spd; dy =  Math.sin(ang) * spd; }
+            else if (brd === 2) { x = rnd(W); y = H;       dx =  Math.sin(ang) * spd; dy = -Math.cos(ang) * spd; }
+            else                { x = -SZ;    y = rnd(H);  dx =  Math.cos(ang) * spd; dy =  Math.sin(ang) * spd; }
+            en.push({ x, y, dx, dy, xR: x, yR: y });
+        }
+
+        function iniGer() {
+            ags   = neat.pop.map(g => {
+                const px = ZONA.x + ZONA.w / 2 - SZ / 2 + (Math.random() - 0.5) * 50;
+                const py = ZONA.y + ZONA.h / 2 - SZ / 2 + (Math.random() - 0.5) * 50;
+                return { g, x: px, y: py, xR: px, yR: py, vivo: true, fit: 0 };
+            });
+            en    = [];
+            nvEn  = 1; spTmr = 0; spItv = 55; stepG = 0;
+            vivos = TAM_POP; bIdx = -1; bFitG = 0;
+        }
+
+        function passo() {
+            stepG++;
+            if (++spTmr >= spItv) {
+                criarEn();
+                spTmr = 0;
+                if (stepG % 400 === 0) { nvEn++; spItv = Math.max(18, spItv - 4); }
+            }
+
+            for (let i = en.length - 1; i >= 0; i--) {
+                en[i].x += en[i].dx; en[i].y += en[i].dy;
+                if (en[i].x > W + SZ*2 || en[i].x < -SZ*2 ||
+                    en[i].y > H + SZ*2 || en[i].y < -SZ*2) {
+                    en.splice(i, 1);
+                }
+            }
+
+            vivos = 0; bFitG = 0; bIdx = -1;
+
+            for (let i = 0; i < ags.length; i++) {
+                const ag = ags[i];
+                if (!ag.vivo) continue;
+
+                const ents  = getSens(ag);
+                const saids = ag.g.calcSaida(ents);
+                const sp    = 3;
+
+                if (saids[0] > 0.5) ag.y = Math.max(ZONA.y,              ag.y - sp);
+                if (saids[1] > 0.5) ag.y = Math.min(ZONA.y + ZONA.h - SZ, ag.y + sp);
+                if (saids[2] > 0.5) ag.x = Math.max(ZONA.x,              ag.x - sp);
+                if (saids[3] > 0.5) ag.x = Math.min(ZONA.x + ZONA.w - SZ, ag.x + sp);
+
+                const agCx = ag.x + SZ / 2, agCy = ag.y + SZ / 2;
+                const dc   = Math.sqrt((agCx - W / 2) ** 2 + (agCy - H / 2) ** 2);
+                const prox = 1 - dc / maxDC;
+                const tFat = 1 + stepG * 0.004;
+                ag.fit    += (1 + prox * prox * 2) * tFat;
+
+                let morreu = false;
+                for (const e of en) { if (col(ag, e)) { morreu = true; break; } }
+
+                if (morreu) {
+                    ag.vivo  = false;
+                    ag.g.fit = ag.fit;
+                } else {
+                    vivos++;
+                    if (ag.fit > bFitG) { bFitG = ag.fit; bIdx = i; bEnts = ents; }
+                }
+            }
+        }
+
+        function desenharSensores(ag) {
+            const mDs = getMDs(ag);
+            const cx  = ag.xR + SZ / 2, cy = ag.yR + SZ / 2;
+
+            ctx.save();
+            for (let sec = 0; sec < 8; sec++) {
+                const ang    = sec * Math.PI / 4;
+                const rdx    = Math.cos(ang), rdy = Math.sin(ang);
+                const nd     = mDs[sec];
+                const pixD   = nd * maxDS;
+                const temEnm = nd < 0.97 && pixD < MAX_SEN;
+                const compL  = temEnm ? pixD : Math.min(MAX_SEN, pixD);
+                const perigo = 1 - nd;
+
+                const r = Math.floor(240 * Math.min(perigo * 2.5, 1));
+                const g = Math.floor(210 * Math.max(1 - perigo * 2, 0));
+                const a = 0.15 + perigo * 0.65;
+
+                ctx.beginPath();
+                ctx.moveTo(cx, cy);
+                ctx.lineTo(cx + rdx * compL, cy + rdy * compL);
+                ctx.strokeStyle = `rgba(${r},${g},10,${a})`;
+                ctx.lineWidth   = 1.5;
+                ctx.setLineDash([5, 4]);
+                ctx.stroke();
+
+                if (temEnm) {
+                    ctx.setLineDash([]);
+                    ctx.beginPath();
+                    ctx.arc(cx + rdx * pixD, cy + rdy * pixD, 4, 0, 2 * Math.PI);
+                    ctx.fillStyle = `rgba(${r},${g},10,0.9)`;
+                    ctx.fill();
+                }
+            }
+            ctx.setLineDash([]);
+            ctx.restore();
+        }
+
+        function render() {
+            ctx.fillStyle = '#141414';
+            ctx.fillRect(0, 0, W, H);
+
+            ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+            ctx.lineWidth   = 1;
+            const grid = 40;
+            for (let x = grid; x < W; x += grid) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0); ctx.lineTo(x, H);
+                ctx.stroke();
+            }
+            for (let y = grid; y < H; y += grid) {
+                ctx.beginPath();
+                ctx.moveTo(0, y); ctx.lineTo(W, y);
+                ctx.stroke();
+            }
+
+            ctx.strokeStyle = 'rgba(220, 40, 40, 0.7)';
+            ctx.lineWidth   = 3;
+            ctx.setLineDash([]);
+            ctx.strokeRect(ZONA.x, ZONA.y, ZONA.w, ZONA.h);
+
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+            ctx.fillRect(0, 0, W, ZONA.y);
+            ctx.fillRect(0, ZONA.y + ZONA.h, W, H - ZONA.y - ZONA.h);
+            ctx.fillRect(0, ZONA.y, ZONA.x, ZONA.h);
+            ctx.fillRect(ZONA.x + ZONA.w, ZONA.y, W - ZONA.x - ZONA.w, ZONA.h);
+
+            for (const ag of ags) {
+                if (!ag.vivo) continue;
+                ag.xR += (ag.x - ag.xR) * LERP_A;
+                ag.yR += (ag.y - ag.yR) * LERP_A;
+                ctx.fillStyle   = 'rgba(40,200,110,0.18)';
+                ctx.strokeStyle = 'rgba(30,180,80,0.4)';
+                ctx.lineWidth   = 1;
+                ctx.beginPath();
+                ctx.roundRect(ag.xR, ag.yR, SZ, SZ, 6);
+                ctx.fill();
+                ctx.stroke();
+            }
+
+            for (const e of en) {
+                e.xR += (e.x - e.xR) * LERP_A;
+                e.yR += (e.y - e.yR) * LERP_A;
+                ctx.fillStyle = 'rgba(180,10,10,0.35)';
+                ctx.fillRect(e.xR + 2, e.yR + 3, SZ, SZ);
+                const eg = ctx.createLinearGradient(e.xR, e.yR, e.xR, e.yR + SZ);
+                eg.addColorStop(0, '#ff3d3d');
+                eg.addColorStop(1, '#b41313');
+                ctx.fillStyle   = eg;
+                ctx.strokeStyle = '#4a0505';
+                ctx.lineWidth   = 2;
+                ctx.beginPath();
+                ctx.roundRect(e.xR, e.yR, SZ, SZ, 3);
+                ctx.fill();
+                ctx.stroke();
+            }
+
+            if (bIdx >= 0) {
+                const ag = ags[bIdx];
+                desenharSensores(ag);
+
+                ctx.save();
+                ctx.shadowColor = 'rgba(0,220,80,0.7)';
+                ctx.shadowBlur  = 22;
+                ctx.fillStyle   = '#00d850';
+                ctx.strokeStyle = '#003d14';
+                ctx.lineWidth   = 2;
+                ctx.beginPath();
+                ctx.roundRect(ag.xR, ag.yR, SZ, SZ, 6);
+                ctx.fill();
+                ctx.stroke();
+                ctx.restore();
+
+                viz.atualizar(ag.g, bEnts);
+            }
+        }
+
+        function atuHud() {
+            document.getElementById('sGer').textContent = neat.ger;
+            document.getElementById('sViv').textContent = vivos;
+            document.getElementById('sFit').textContent = Math.floor(bFitG);
+            document.getElementById('sRec').textContent = Math.floor(recorde);
+            document.getElementById('sEsp').textContent = neat.espec.length || '-';
+        }
+
+        function salvarMelhorGeral() {
+            if (bFitG > recorde && bIdx >= 0) {
+                recorde     = bFitG;
+                melhorGeral = Genoma.carregar(ags[bIdx].g.salvar());
+            }
+        }
+
+        function tick() {
+            if (autoVel) {
+                if      (vivos > 600) vel = 5;
+                else if (vivos > 200) vel = 10;
+                else                  vel = 20;
+                document.getElementById('btnVel').textContent = `Vel: ${vel}x`;
+            }
+            for (let s = 0; s < vel; s++) {
+                passo();
+                salvarMelhorGeral();
+                if (vivos === 0) {
+                    for (const ag of ags) { if (ag.g.fit === 0) ag.g.fit = ag.fit; }
+                    render();
+                    atuHud();
+                    neat.evoluir();
+                    iniGer();
+                    raf = requestAnimationFrame(tick);
+                    return;
+                }
+            }
+            render();
+            atuHud();
+            raf = requestAnimationFrame(tick);
+        }
+
+        document.getElementById('btnVel').addEventListener('click', () => {
+            velIdx = (velIdx + 1) % VELS.length;
+            vel    = VELS[velIdx];
+            document.getElementById('btnVel').textContent = `Vel: ${vel}x`;
+        });
+
+        document.getElementById('btnAuto').addEventListener('click', function() {
+            autoVel = !autoVel;
+            this.textContent = autoVel ? 'Auto: ON' : 'Auto: OFF';
+            this.classList.toggle('ativo', autoVel);
+        });
+
+        document.getElementById('btnSalvar').addEventListener('click', () => {
+            const src  = melhorGeral ?? neat.getMelhorGenoma();
+            if (!src) return;
+            const json = JSON.stringify(src.salvar(), null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url  = URL.createObjectURL(blob);
+            const a    = document.createElement('a');
+            a.href     = url;
+            a.download = `rede_ger${neat.ger}_fit${Math.floor(recorde)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+
+        iniGer();
+        raf = requestAnimationFrame(tick);
+    </script>
+</body>
+</html>

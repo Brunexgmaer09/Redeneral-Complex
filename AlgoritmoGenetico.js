@@ -21,8 +21,8 @@ class NEAT {
         this._txMutW  = 0.72;
         this._pPerW   = 0.97;
         this._sdMutW  = 0.3;
-        this._txAddCx = 0.03;
-        this._txAddNo = 0.01;
+        this._txAddCx = 0.06;
+        this._txAddNo = 0.03;
         this._txTog   = 0.01;
         this._compFit = true;
         this._nElite  = 6;
@@ -155,11 +155,11 @@ class NEAT {
         }
 
         const ratio = this.espec.length / this._espAlvo;
-        if      (ratio < 0.5) this._dt = Math.max(this._dtMin, this._dt - 0.2);
-        else if (ratio < 0.8) this._dt = Math.max(this._dtMin, this._dt - 0.05);
-        else if (ratio > 3.0) this._dt += 0.3;
-        else if (ratio > 1.5) this._dt += 0.1;
-        else if (ratio > 1.1) this._dt += 0.03;
+        if      (ratio < 0.5) this._dt = Math.max(this._dtMin, this._dt - 0.05);
+        else if (ratio < 0.8) this._dt = Math.max(this._dtMin, this._dt - 0.02);
+        else if (ratio > 3.0) this._dt += 0.08;
+        else if (ratio > 1.5) this._dt += 0.04;
+        else if (ratio > 1.1) this._dt += 0.01;
     }
 
     _ajFit() {
